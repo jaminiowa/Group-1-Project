@@ -1,94 +1,249 @@
+####################################################################################################################
+# Clear workspace
+####################################################################################################################
+rm(list = ls())                     
+####################################################################################################################
 
-
-rm(list = ls())               # Clear workspace
-
-library(readr)
+####################################################################################################################
+#Libraries
+####################################################################################################################
+library(readr)                       
 library(ggplot2)
 library(dplyr)
 library(scales)
 library(reshape2)
+####################################################################################################################
 
-df1 <- read_csv("listings.csv") 
+####################################################################################################################
+# Read in Data  22725 rows with 16 variables
+####################################################################################################################
+df <- read_csv("listings.csv")         
 df2 <- read_csv("reviews.csv.gz")
 df3 <- read_csv("calendar.csv.gz")
-
-
 df4 <- read_csv("listings.csv.gz")
-#df4$neighbourhood_group_cleansed
-#qplot(longitude, latitude, data = df4, color = neighbourhood_group_cleansed, na.rm = TRUE)   #Look at the location of all BnB for all Islands
+####################################################################################################################
 
-df <- read_csv("listings.csv")        # Read in Data  22725 rows with 16 variables
-#print(sapply(df,class))               # Review the class of each variable
+####################################################################################################################
+#Factor Islands
+####################################################################################################################
+df$neighbourhood_group <- factor(df$neighbourhood_group)        
+####################################################################################################################
 
-df$neighbourhood_group <- factor(df$neighbourhood_group)
+####################################################################################################################
+#Add a Column for the Age of Ownership
+####################################################################################################################
+df <- mutate(df, current_year = as.integer(format(Sys.Date(), "%Y")))
+df <- mutate(df, hosttime = as.integer(format(df4$host_since, "%Y")))
+df <- mutate(df, age = current_year - hosttime)
+####################################################################################################################
 
+####################################################################################################################
+#Factor the Price and turn it into a number
+####################################################################################################################
+df$price <- factor(df$price)
+df$price <- as.numeric(df$price)
+####################################################################################################################
 
+####################################################################################################################
+#Add a column for host who are identified as SuperHost
+####################################################################################################################
+df <- mutate(df, great_host = df4$host_is_superhost)            #Great Hosts per Island
+df <- mutate(df, great_host = factor(as.integer(df4$host_is_superhost == TRUE, na.rm=TRUE)))
+####################################################################################################################
 
-# Overall Picture of all AirBnB
-p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE) 
+####################################################################################################################
+# Remove records with even a single NA
+####################################################################################################################
+df <- df[complete.cases(df), ]        
+####################################################################################################################
+
+####################################################################################################################
+#Filter for great hosts
+####################################################################################################################
+df <- filter(df, great_host == 1)
+####################################################################################################################
+
+####################################################################################################################
+# Picture of Islands: Overall Picture of all AirBnB
+####################################################################################################################
+p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
 p <- p + scale_color_hue(name = "Island")
 p <- p + ggtitle("Overview of AirBNB per Island")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
-p <- p + geom_text(aes(label=ifelse(latitude<(18.93),as.character(neighbourhood_group),'')),hjust=-.1,vjust=-14)
-p <- p + geom_text(aes(label=ifelse(latitude>(21.7) & latitude<(21.8),as.character(neighbourhood_group),'')),hjust=-.5,vjust=1)
-p <- p + geom_text(aes(label=ifelse(latitude>(21.8) & latitude<(21.87),as.character(neighbourhood_group),'')),hjust=-.5,vjust=1)
-p <- p + geom_text(aes(label=ifelse(latitude>(21.09) & latitude<(21.1),as.character(neighbourhood_group),'')),hjust=-.5,vjust=-1)
+p <- p + geom_text(aes(label=ifelse(latitude<(18.93),as.character(neighbourhood_group),'')),hjust=-.1,vjust=-7, color = "blue", size= 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(21.7) & latitude<(21.8),as.character(neighbourhood_group),'')),hjust=-.5,vjust=1, color = "blue", size = 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(21.86) & latitude<(21.87),as.character(neighbourhood_group),'')),hjust=-.2,vjust=1, color = "blue", size = 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(21.13) & latitude<(21.14),as.character(neighbourhood_group),'')),hjust=-.5,vjust=4, color = "blue", size = 8)
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
 p
+###################################################################################################################
 
-# Remove records with even a single NA  17204 rows with 16 variables
-df <- df[complete.cases(df), ]        
+###################################################################################################################
+#Bar Chart : Years of Ownership per Island
+###################################################################################################################
+p <- qplot(age, data = df, geom = "bar", xlab = "Years of Ownership", ylab = "QTY of BnB",
+           fill = I("yellow"),                     # Add a light blue fill
+           color = I("red"),                          # Make color of rectangles red
+           alpha = I(0.5))                            # Set 50% transparancy
+p <- p + ggtitle("Years of Ownership per Island")
+p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+      axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+      axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+      axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p
+###################################################################################################################
 
-df <- mutate(df, current_year = as.integer(format(Sys.Date(), "%Y")))
-df$current_year
-df <- mutate(df, hosttime = as.integer(format(df4$host_since, "%Y")))
-df$hosttime
-df <- mutate(df, age = current_year - hosttime)
-df$age
-class(df$price)
-class(df$age)
-df$price
-df$price <- factor(df$price)
-df$price <- as.numeric(df$price)
-class(df$price)
-qplot(age, data = df, geom = "density", log = "x", fill = neighbourhood_group,
-      alpha = I(0.5)) + scale_fill_hue(name = "Island")
+###################################################################################################################
+#Price distribution
+###################################################################################################################
+p <- qplot(price,data = df, geom = "bar")
+p <- p + ggtitle("Price Distribution: AVG =$210")
+p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p <- p + scale_x_continuous( # Update x axis
+  name = "Price Distribution",     # Update name, i.e., axis title
+  labels = dollar)         # Label axis as dollars. Needs library(scales)
+p
+###################################################################################################################
 
-qplot(age,data = df, geom = "bar")
-qplot(age,data = df, geom = "bar", log = "y", facets = neighbourhood_group ~ .)
-qplot(price,data = df, geom = "bar")
-qplot(price, age, data = df, geom = "point", log = "y", facets = neighbourhood_group ~ .)
-qplot(age,            # The "x" variable
-      price,     # The "y" variable
-      data = df,      # Our data frame
-      geom = "jitter", # The geometry for a scatter plot
-      log = "y")      # Log the sale price
-
-
-# What island has the most AIRBNB
-p <- qplot(neighbourhood_group, data = df, geom = "bar", xlab = "Island", ylab = "QTY of BnB",    # Basic bar chart
+###################################################################################################################
+# Bar Chart: What island has the most AIRBNB
+###################################################################################################################
+p <- qplot(neighbourhood_group, data = df, geom = "bar", xlab = "Island", ylab = "QTY of BnB",
            fill = I("yellow"),                     # Add a light blue fill
            color = I("red"),                          # Make color of rectangles red
            alpha = I(0.5))                            # Set 50% transparancy
 p <- p + ggtitle("QTY of AirBnB per Island")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
 p
+###################################################################################################################
 
-# Overall Average price for AirBNB
-mean(df$price)                        #252.6865
-
+###################################################################################################################
+# BoxPlots: Overall Average price for AirBNB
 # BoxPlots(which island has the most expensive): Facet by island and show avg price
+###################################################################################################################
+mean(df$price)                        #210
+
 p <- qplot(neighbourhood_group, price, data = df, geom = "boxplot", xlab = "Island", ylab = "Price", log = "y")
 p <- p + ggtitle("Avg price per Island")
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
 p
+###################################################################################################################
 
+###################################################################################################################
 # Overlap(which island has the most expensive): Specify "Island" as a facet
+###################################################################################################################
 qplot(price, data = df, geom = "density", log = "x", facets = . ~ neighbourhood_group)
 # Separate and fill color by city, set 50% transparency
-qplot(price, data = df, geom = "density", log = "x", fill = neighbourhood_group,
+p <- qplot(price, data = df, geom = "density", log = "x", fill = neighbourhood_group,
       alpha = I(0.5)) + scale_fill_hue(name = "Island")
+p <- p + ggtitle("Avg price per Island")
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p
+###################################################################################################################
+#Room Type
+###################################################################################################################
+df$room_type <- factor(df$room_type)
+qplot(room_type, data=df, geom = "bar")
+###################################################################################################################  
+
+###################################################################################################################
+#Plot Great Hosts
+###################################################################################################################
 
 
-df <- subset(df, price <= 150 & neighbourhood_group == "Hawaii")   # Subset for Hawaii
+p <- qplot(great_host, data = df, geom = "bar")
+p <- p + ggtitle("How many great Hosts are there 6975 / 22725")
+p
+
+p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
+p <- p + ggtitle("Where are the great hosts per island 6975 / 22725")
+p 
+
+p <- qplot(great_host, data = df, geom = "bar", facets = . ~ neighbourhood_group)
+p <- p + ggtitle("How many great Hosts are there per island 6975 / 22725")
+p
+
+qplot(price, data = df, geom = "density", log = "x", facets = neighbourhood_group ~ great_host)
+####################################################################################################################
+
+####################################################################################################################
+df <- filter(df, great_host == 1 & price <50, age<=5)
+p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
+p <- p + ggtitle("Where are the great hosts per island 268 / 22725")
+p <- p + geom_text(aes(label=ifelse(latitude>(18) & latitude<(19.047),as.character(neighbourhood_group),'')),hjust=-.1,vjust=-7, color = "blue", size= 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(21.65) & latitude<(22),as.character(neighbourhood_group),'')),hjust=-.5,vjust=1, color = "blue", size = 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(22),as.character(neighbourhood_group),'')),hjust=-.2,vjust=1, color = "blue", size = 8)
+p <- p + geom_text(aes(label=ifelse(latitude>(20.9) & latitude<(21),as.character(neighbourhood_group),'')),hjust=-.3,vjust=1, color = "blue", size = 8)
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p <- p + scale_color_hue(name = "Island")
+p
+
+pivot3 <- ungroup(df)  %>%
+  select(name, room_type, price, last_review, minimum_nights,age) %>%
+  arrange(-price,minimum_nights, age)
+
+pivot3
+###########################################################################################################################
+
+######################################################################################################################
+p <- qplot(longitude, latitude, data = df, color = price, na.rm = TRUE)
+p <- p + scale_color_gradient( # Update the continuous color gradient
+  name = "Price",         # Set the scale name
+  low = "blue",               # Set color for low data values
+  high = "red")             # Set color for high data values
+p
+######################################################################################################################
+
+
+df <- filter(df, great_host == 1 & neighbourhood_group_cleansed == "Hawaii" & price < 200)
+pivot3 <- ungroup(df)  %>%
+  select(name, room_type, price, last_review, minimum_nights)
+
+pivot3
+
+p <- qplot(longitude, latitude, data = df, color = neighbourhood_group_cleansed, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
+p
+
+
+
+
+df <- subset(df, price <= 100 & neighbourhood_group == "Hawaii" & room_type == "Entire home/apt")   # Subset for Hawaii
 #mean(df$price, na.rm = TRUE)                                      # Average Price for Hawaii 155.7547
 
 
@@ -100,7 +255,7 @@ p <- p + scale_color_gradient( # Update the continuous color gradient
   high = "red")             # Set color for high data values
 p
 
-df <- subset(df, price <= 150 & neighbourhood_group == "Hawaii" & longitude < -156)   # Subset for Hawaii
+df <- subset(df, price <= 150 & neighbourhood_group == "Hawaii" & longitude < -156 & room_type == "Entire home/apt")   # Subset for Hawaii
 #mean(df$price, na.rm = TRUE)                                      # Average Price for Hawaii 155.7547
 
 
@@ -115,7 +270,7 @@ p
 
 
 pivot3 <- ungroup(df)  %>%
-  select(name, room_type)
+  select(name, room_type, price, last_review, minimum_nights)
 
 pivot3
 
