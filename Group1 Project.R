@@ -15,11 +15,35 @@ library(reshape2)
 ####################################################################################################################
 
 ####################################################################################################################
-# Read in Data  22725 rows with 16 variables
-####################################################################################################################
+# Initial Read
 df <- read_csv("listings.csv")
 df4 <- read_csv("listings.csv.gz")
-####################################################################################################################
+
+# Print memory usage, 4.6Mb
+print(format(object.size(df), units = "Mb"))
+
+#Modify Columns
+my_col_types = cols(
+  id = col_integer(),
+  name = col_character(),
+  host_id = col_integer(),
+  host_name = col_character(),
+  neighbourhood_group = col_character(),
+  neighbourhood = col_character(),
+  latitude = col_double(),
+  longitude = col_double(),
+  room_type = col_character(),
+  price = col_integer(),
+  minimum_nights = col_integer(),
+  number_of_reviews = col_integer(),
+  last_review = col_date(format = ""),
+  reviews_per_month = col_double(),
+  calculated_host_listings_count = col_integer(),
+  availability_365 = col_integer()
+)
+
+#Final Read
+df <- read_csv("listings.csv", col_types = my_col_types)
 
 ####################################################################################################################
 #Factor Islands
@@ -48,6 +72,13 @@ df$price <- as.numeric(df$price)
 df <- mutate(df, great_host = df4$host_is_superhost)            #Great Hosts per Island
 #df <- mutate(df, great_host = factor(as.integer(df4$host_is_superhost == "t")))
 df$great_host
+####################################################################################################################
+
+####################################################################################################################
+#Add a column for east and west side of island for Hawaii
+####################################################################################################################
+df <- mutate(df, sideofisland = ifelse(longitude<(-155.5),'east','west'))
+df$sideofisland
 ####################################################################################################################
 
 ####################################################################################################################
