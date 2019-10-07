@@ -16,6 +16,7 @@ library(reshape2)
 
 ####################################################################################################################
 # Initial Read
+####################################################################################################################
 df <- read_csv("listings.csv")
 df4 <- read_csv("listings.csv.gz")
 
@@ -94,7 +95,7 @@ p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = 
 p <- p + scale_color_hue(name = "Island")
 p <- p + ggtitle("Overview of AirBNB per Island")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
-p <- p + geom_text(aes(label=ifelse(latitude<(18.99),as.character(neighbourhood_group),'')),hjust=-.1,vjust=-7, color = "blue", size= 8)
+p <- p + geom_text(aes(label=ifelse(latitude<(18.99),as.character(neighbourhood_group),'')),hjust=2,vjust=-7, color = "blue", size= 8)
 p <- p + geom_text(aes(label=ifelse(latitude>(21.7) & latitude<(21.8),as.character(neighbourhood_group),'')),hjust=-.5,vjust=1, color = "blue", size = 8)
 p <- p + geom_text(aes(label=ifelse(latitude>(21.86) & latitude<(21.87),as.character(neighbourhood_group),'')),hjust=-.2,vjust=1, color = "blue", size = 8)
 p <- p + geom_text(aes(label=ifelse(latitude>(21.13) & latitude<(21.14),as.character(neighbourhood_group),'')),hjust=-.5,vjust=4, color = "blue", size = 8)
@@ -133,7 +134,7 @@ p <- qplot(age, data = df, geom = "bar", xlab = "Years of Ownership", ylab = "QT
            fill = I("yellow"),                     # Add a light blue fill
            color = I("red"),                          # Make color of rectangles red
            alpha = I(0.5))                            # Set 50% transparancy
-p <- p + ggtitle("Years of Ownership for Hawaii = 3.78 years")
+p <- p + ggtitle("Overall AVG.Years of Ownership for Hawaii = 3.78 years")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
 p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
 p <- p + theme(axis.text = element_text(face="bold"))
@@ -180,6 +181,7 @@ p
 p <- qplot(great_host, data = df, geom = "bar", facets = . ~ neighbourhood_group)
 p <- p + ggtitle("How many great Hosts are there per island 6975 / 22725")
 p
+
 
 qplot(price, data = df, geom = "density", log = "x", facets = neighbourhood_group ~ great_host)
 ####################################################################################################################
