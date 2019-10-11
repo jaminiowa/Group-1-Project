@@ -5,14 +5,34 @@ rm(list = ls())
 ####################################################################################################################
 
 ####################################################################################################################
-#Libraries
+#Load the Libraries
 ####################################################################################################################
-library(readr)                       
-library(ggplot2)
-library(dplyr)
-library(scales)
-library(reshape2)
+# Load packages
+suppressPackageStartupMessages(library(readr))                     
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(scales))
+suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(choroplethr))
+suppressPackageStartupMessages(library(choroplethrMaps))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(ggplot2))
 ####################################################################################################################
+
+####################################################################################################################
+#Plot all the Hawaiian Islands
+####################################################################################################################
+# Load population data by county
+data(df_pop_county)
+
+# Store the data in a shorter name
+dpc <- df_pop_county
+
+
+# Create, store, and view plot
+p <- county_choropleth(dpc, state_zoom = "hawaii")
+p
+
 
 ####################################################################################################################
 # Initial Read
@@ -21,7 +41,7 @@ df <- read_csv("listings.csv")
 df4 <- read_csv("listings.csv.gz")
 
 # Print memory usage, 4.6Mb
-print(format(object.size(df), units = "Mb"))
+#print(format(object.size(df), units = "Mb"))
 
 #Modify Columns
 my_col_types = cols(
@@ -47,13 +67,22 @@ my_col_types = cols(
 df <- read_csv("listings.csv", col_types = my_col_types)
 
 ####################################################################################################################
-#Factor Islands
+#Factor Islands into four distinct names
 ####################################################################################################################
 df$neighbourhood_group <- factor(df$neighbourhood_group)        
 ####################################################################################################################
 
 ####################################################################################################################
-#Add a Column for the Age of Ownership
+#Read in a new column into listings.csv for the Review Scores which are ratings
+####################################################################################################################
+df$reviewscores <- df4$review_scores_rating
+temp <- na.omit(df)
+temp <- subset(df, reviewscores >= 97)
+p < - qplot(reviewscores, data=temp, geom="bar", facets = "neighbourhood_group", xlab = "Review Scores")
+####################################################################################################################
+
+####################################################################################################################
+#Add a Column into listings.csv for the Age of Ownership
 ####################################################################################################################
 df <- mutate(df, current_year = as.integer(format(Sys.Date(), "%Y")))
 df <- mutate(df, hosttime = as.integer(format(df4$host_since, "%Y")))
@@ -73,12 +102,18 @@ df$price <- as.numeric(df$price)
 df <- mutate(df, great_host = df4$host_is_superhost)            #Great Hosts per Island
 #df <- mutate(df, great_host = factor(as.integer(df4$host_is_superhost == "t")))
 df$great_host
+class(df$great_host)
+df$great_host <- factor(df$great_host)
+levels(df$great_host)
+levels(df$great_host) <- c("Not a Great Host", "Great Host")
+
+print(levels(df$great_host))
 ####################################################################################################################
 
 ####################################################################################################################
 #Add a column for east and west side of island for Hawaii
 ####################################################################################################################
-df <- mutate(df, sideofisland = ifelse(longitude<(-155.5),'east','west'))
+df <- mutate(df, sideofisland = ifelse(longitude<(-155.5),'East','West'))
 df$sideofisland
 ####################################################################################################################
 
@@ -87,6 +122,11 @@ df$sideofisland
 ####################################################################################################################
 df <- df[complete.cases(df), ]        
 ####################################################################################################################
+
+####################################################################################################################
+# Create a Table showing AirBnB per Island
+####################################################################################################################
+table(df$neighbourhood_group)
 
 ####################################################################################################################
 # Picture of all Islands: Overall Picture of all AirBnB
@@ -134,7 +174,7 @@ p <- qplot(age, data = df, geom = "bar", xlab = "Years of Ownership", ylab = "QT
            fill = I("yellow"),                     # Add a light blue fill
            color = I("red"),                          # Make color of rectangles red
            alpha = I(0.5))                            # Set 50% transparancy
-p <- p + ggtitle("Overall AVG.Years of Ownership for Hawaii = 3.78 years")
+p <- p + ggtitle("Overall AVG.Years of Ownership = 3.78 years")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
 p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
 p <- p + theme(axis.text = element_text(face="bold"))
@@ -150,7 +190,7 @@ mean(df$age)
 #Price distribution
 ###################################################################################################################
 p <- qplot(price,data = df, geom = "bar")
-p <- p + ggtitle("Price Distribution for Hawaii: AVG =$218")
+p <- p + ggtitle("Price Distribution: AVG =$218")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
 p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
 p <- p + theme(axis.text = element_text(face="bold"))
@@ -165,25 +205,52 @@ p
 mean(df$price)
 ###################################################################################################################
 
+####################################################################################################################
+# Create a Table showing Great Hosts per Island
+####################################################################################################################
+table(df$great_host)
+
+
 ###################################################################################################################
 #Plot Great Hosts
 ###################################################################################################################
-
+#df$great_host
 
 p <- qplot(great_host, data = df, geom = "bar")
-p <- p + ggtitle("How many great Hosts are there 6975 / 22725")
+p <- p + ggtitle("Total Great Hosts (6975 / 22725)")
+p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p <- p + scale_x_discrete( # Update x axis
+  name = "Great Host")     # Update name, i.e., axis title
 p
 
-p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
-p <- p + ggtitle("Where are the great hosts per island 6975 / 22725")
-p 
+#p <- qplot(longitude, latitude, data = df, color = neighbourhood_group, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
+#p <- p + ggtitle("Where are the great hosts per island 6975 / 22725")
+#p 
 
-p <- qplot(great_host, data = df, geom = "bar", facets = . ~ neighbourhood_group)
-p <- p + ggtitle("How many great Hosts are there per island 6975 / 22725")
+p <- qplot(great_host, data = df, geom = "bar", facets = . ~ neighbourhood_group,
+           fill = I("yellow"),                     # Add a light blue fill
+           color = I("red"),                          # Make color of rectangles red
+           alpha = I(0.5))                            # Set 50% transparancy    
+p <- p + ggtitle("Distribution of great Hosts per island")
+p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
+p <- p + theme(plot.title = element_text(colour="grey20",size=20,face="bold"))
+p <- p + theme(axis.text = element_text(face="bold"))
+p <- p + theme(axis.title.y = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.x = element_text(colour="grey20",size=20,face="bold"),
+               axis.text.y = element_text(colour="grey20",size=20,face="bold"),  
+               axis.title.x = element_text(colour="grey20",size=20,face="bold"))
+p <- p + scale_x_discrete( # Update x axis
+  name = "")     # Update name, i.e., axis title
+p <- p + theme(axis.text.x = element_text(angle = 90))
 p
 
-
-qplot(price, data = df, geom = "density", log = "x", facets = neighbourhood_group ~ great_host)
+#qplot(price, data = df, geom = "density", log = "x", facets = neighbourhood_group ~ great_host)
 ####################################################################################################################
 
 
@@ -344,50 +411,6 @@ p <- p + scale_color_gradient( # Update the continuous color gradient
   high = "red")             # Set color for high data values
 p
 ######################################################################################################################
-
-
-df <- filter(df, great_host == 1 & neighbourhood_group_cleansed == "Hawaii" & price < 200)
-pivot3 <- ungroup(df)  %>%
-  select(name, room_type, price, last_review, minimum_nights)
-
-pivot3
-
-p <- qplot(longitude, latitude, data = df, color = neighbourhood_group_cleansed, na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
-p
-
-
-
-
-df <- subset(df, price <= 100 & neighbourhood_group == "Hawaii" & room_type == "Entire home/apt")   # Subset for Hawaii
-#mean(df$price, na.rm = TRUE)                                      # Average Price for Hawaii 155.7547
-
-
-
-p <- qplot(longitude, latitude, data = df, color = price, na.rm = TRUE)
-p <- p + scale_color_gradient( # Update the continuous color gradient
-  name = "Price",         # Set the scale name
-  low = "blue",               # Set color for low data values
-  high = "red")             # Set color for high data values
-p
-
-df <- subset(df, price <= 150 & neighbourhood_group == "Hawaii" & longitude < -156 & room_type == "Entire home/apt")   # Subset for Hawaii
-#mean(df$price, na.rm = TRUE)                                      # Average Price for Hawaii 155.7547
-
-
-
-p <- qplot(longitude, latitude, data = df, color = price, na.rm = TRUE)
-p <- p + scale_color_gradient( # Update the continuous color gradient
-  name = "Price",         # Set the scale name
-  low = "blue",               # Set color for low data values
-  high = "red")             # Set color for high data values
-p
-
-
-
-pivot3 <- ungroup(df)  %>%
-  select(name, room_type, price, last_review, minimum_nights)
-
-pivot3
 
 
 
