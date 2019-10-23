@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(ggplot2))
 ####################################################################################################################
 
 ####################################################################################################################
-# Initial Read
+# Read in Data
 ####################################################################################################################
 df <- read_csv("listings.csv")
 df4 <- read_csv("listings.csv.gz")
@@ -38,7 +38,7 @@ df$super_host <- factor(df$super_host)                                          
 levels(df$super_host) <- c("Host", "Superhost")                                            #Change name of great hosts
 
 ####################################################################################################################
-# Configure Price
+# Read in Price
 ####################################################################################################################
 df$price <- factor(df$price)                                                                #Factor the Price
 df$price <- as.numeric(df$price)                                                            #Turn it into a number
@@ -51,22 +51,22 @@ df <- mutate(df, hosttime = as.integer(format(df4$host_since, "%Y")))
 df <- mutate(df, age = current_year - hosttime)
 
 ####################################################################################################################
-# Configure Review Scores
+# Read in Review Scores
 ####################################################################################################################
 df$reviewscores <- df4$review_scores_rating
 
 ####################################################################################################################
-# Configure Bedrooms
+# Read in Bedrooms
 ####################################################################################################################
 df$bedrooms <- df4$bedrooms
 
 ####################################################################################################################
-# Configure Bathrooms
+# Read in Bathrooms
 ####################################################################################################################
 df$bathrooms <- df4$bathrooms
 
 ####################################################################################################################
-# Configure Price
+# Cut Price Range into BIN's and Relabel BIN's
 ####################################################################################################################
 df$Price_Range <- cut(df$price, 50*(0:16))
 df$Price_Range <- factor(df$Price_Range)
@@ -77,24 +77,24 @@ levels(df$Price_Range) <- c("$0-$50", "$50-$100", "$100-$150",
                                   "$650-$700", "$700-$750", "$750-$800")
 
 ####################################################################################################################
-# Configure Side of Island
+# Configure Side of Island to East and West
 ####################################################################################################################
 df <- mutate(df, sideofisland = ifelse(longitude<(-155.5),'East','West'))
 
 ####################################################################################################################
-# Configure Amenities
+# Read in Amenities
 ####################################################################################################################
 df$amenities <- df4$amenities
 
 ####################################################################################################################
-# Configure BeachFront
+# Read in BeachFront Property's and Re-label levels
 ####################################################################################################################
 df$beachfront <- grepl("beachfront", tolower(df$amenities), fixed = TRUE)
 df$beachfront <- factor(df$beachfront)
 levels(df$beachfront) <- c("Not BeachFront", "BeachFront")
 
 ####################################################################################################################
-# Configure Property Type
+# Read in Property Type
 ####################################################################################################################
 df$property_type <- as.character(df4$property_type)
 
@@ -103,10 +103,55 @@ df$property_type <- as.character(df4$property_type)
 ####################################################################################################################
 df <- df[complete.cases(df), ]                                                              
 ####################################################################################################################
+
+
 df <- mutate(df, magnitude = ifelse(super_host == "Superhost" & beachfront == "BeachFront" & Island == "Hawaii" & price <200 & price >99 & bedrooms >0,10000,0))
 
 temp <- subset(df, super_host == "Superhost" & beachfront == "BeachFront" & Island == "Hawaii" & price <200 & price >99 & bedrooms >0)
 tempp <- subset(df, Island == "Hawaii")
+
+
+####################################################################################################################
+# Function for TOP 5 Amenities by superhost
+####################################################################################################################
+top5amenitiesrequestedbysuperhost <- function(x,y) {
+  awordsbest <- awords[x:y,]
+  awordsbest
+}
+
+awords <- subset(df, super_host == "Superhost")
+mylist <- strsplit(awords$amenities, "," , fixed = TRUE)
+awords <- unlist((mylist))
+awords <- sort(table(awords))
+awords <- as.data.frame(awords)
+funy <- nrow(awords)
+
+
+
+####################################################################################################################
+# Function for TOP 5 Amenities by Non superhost
+####################################################################################################################
+top5amenitiesrequestedbynonsuperhost <- function(x,y) {
+  aawordsbest <- aawords[x:y,]
+  aawordsbest
+}
+
+aawords <- subset(df, super_host == "Host")
+mylist <- strsplit(aawords$amenities, "," , fixed = TRUE)
+aawords <- unlist((mylist))
+aawords <- sort(table(aawords))
+aawords <- as.data.frame(aawords)
+funny <- nrow(aawords)
+
+
+
+
+
+
+
+
+
+
 ####################################################################################################################
 #Slide 1 - Choropleth Plot of all the Hawaiian Islands
 ####################################################################################################################
@@ -293,10 +338,10 @@ df <- ungroup(bfppis)
 
 
 ####################################################################################################################
-#Slide 18 - Begins : # Picture of top5 in Hawaii
+#Slide 18/19 - Begins : # Picture of top5 in Hawaii
 ####################################################################################################################
 
-p <- qplot(longitude, latitude, data = tempp,shape = super_host, size=magnitude,color = super_host,na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
+p <- qplot(longitude, latitude, data = temp,shape = super_host, size=magnitude,color = super_host,na.rm = TRUE, xlab="Longitude", ylab="Latitude") 
 p <- p + scale_color_hue(name = "Island")
 p <- p + ggtitle("Location of Top Airbnb in Hawaii")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
@@ -323,7 +368,7 @@ p
 
 
 ###################################################################################################################
-#Slide 19
+#Slide 20
 ###################################################################################################################
 p <- ggplot(temp, aes(x = reorder(property_type, price, FUN = median), y = price)) + geom_boxplot() + xlab("") +
   ylab("Price")
@@ -343,7 +388,7 @@ p
 ###################################################################################################################
 
 ###################################################################################################################
-#Slide 20
+#Slide 21
 ###################################################################################################################
 mean(temp$price)
 mean(temp$age)
@@ -367,7 +412,7 @@ p <- p + theme(legend.position = "none")
 p
 
 ###################################################################################################################
-#Slide 22 - Begins: Top 5 in Hawaii
+#Slide 23 - Begins: Top 5 in Hawaii
 ###################################################################################################################
 top5 <- select(temp, name, price, property_type,bedrooms,sideofisland) %>%
   group_by(property_type) %>%
@@ -376,53 +421,16 @@ top5 <- select(temp, name, price, property_type,bedrooms,sideofisland) %>%
 head(top5, n=20)
 ###################################################################################################################
 
+
 ###################################################################################################################
-#Slide 23 Top amenities requested 
+#Slide 24: Top 5 Amenities requested by Superhost Function
 ###################################################################################################################
-
-#amen <- c("air","tv","cable","beachfront","car","towels","microwave","stove","toilet")
-amen <- c("beach")
-amen <- factor(amen)
-for(i in amen){
-  df$i <- grepl(i, tolower(df$amenities), fixed = TRUE)
-  
-  print(i)
-  print(table(df$i))
-  
-}
+top5amenitiesrequestedbysuperhost(funy-4,funy)
 
 
-awords <- subset(df, super_host == "Superhost")
-mylist <- strsplit(awords$amenities, "," , fixed = TRUE)
+###################################################################################################################
+#Slide 24: Top 5 Amenities requested by Non-Superhost Function
+###################################################################################################################
+top5amenitiesrequestedbynonsuperhost(funny-4,funny)
 
-awords <- unlist((mylist))
-
-#awords <- tolower(words)
-#awords
-awords <- sort(table(awords))
-#awords
-awords <- as.data.frame(awords)
-#class(awords)
-#View(awords)
-#x <- nrow(awords)
-awordsbest <- awords[283:287,]
-awordsbest
-#View(awordsbest)
-
-aawords <- subset(df, super_host == "Host")
-mylist <- strsplit(aawords$amenities, "," , fixed = TRUE)
-
-aawords <- unlist((mylist))
-
-#awords <- tolower(words)
-#awords
-aawords <- sort(table(aawords))
-#awords
-aawords <- as.data.frame(aawords)
-#class(awords)
-#View(awords)
-#x <- nrow(awords)
-aawordsbest <- aawords[283:287,]
-aawordsbest
-#View(awordsbest)
 
