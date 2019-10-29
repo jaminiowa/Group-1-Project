@@ -169,7 +169,9 @@ p
 ####################################################################################################################
 table(df$Island)   # Create a Table showing AirBnB per Island
 
-p <- qplot(longitude, latitude, data = df, color = Island, na.rm = TRUE, xlab="Longitude(degrees)", ylab="Latitude(degrees)") 
+
+
+p <- qplot(longitude, latitude, data = df, color = Island, na.rm = TRUE, xlab="Longitude (degrees)", ylab="Latitude (degrees)") 
 p <- p + scale_color_hue(name = "Island")
 p <- p + ggtitle("Overview of Airbnb per Island")
 p <- p + theme(panel.border = element_rect(linetype = "solid", color = "black", fill = NA))
@@ -433,4 +435,12 @@ top5amenitiesrequestedbysuperhost(funy-4,funy)
 ###################################################################################################################
 top5amenitiesrequestedbynonsuperhost(funny-4,funny)
 
+
+
+library(usmap)
+library(ggplot2)
+
+library(usmap)
+p <- plot_usmap(include = c("15001"), regions = "county")
+print(p)
 
